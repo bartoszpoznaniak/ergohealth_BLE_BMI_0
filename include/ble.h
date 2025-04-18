@@ -2,3 +2,5 @@
 
 void setupBLE();
 void loopBLE();
+
+void setValues(float, float);

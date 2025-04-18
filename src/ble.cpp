@@ -39,15 +39,22 @@ void setupBLE()
 
 void loopBLE()
 {
-    int value = 60 + (uint8_t)(esp_random() % 21);
-    char valueStr[8];
-    snprintf(valueStr, sizeof(valueStr), "%d", value);
+    float x = random(-100, 101) / 10.0; // random() zwraca liczbę całkowitą, dzielimy przez 10 aby uzyskać wartości zmiennoprzecinkowe w zakresie -10 do 10
+    float y = random(-100, 101) / 10.0;
+    float z = random(-100, 101) / 10.0;
 
-    pCharacteristic->setValue(valueStr);
+    uint8_t values[12]; // 3 * 4 = 12 bajtów
+
+    // Kopiujemy wartości float do tablicy
+    memcpy(values, &x, sizeof(x));     // Kopiujemy x
+    memcpy(values + 4, &y, sizeof(y)); // Kopiujemy y (od miejsca 4 w tablicy)
+    memcpy(values + 8, &z, sizeof(z)); // Kopiujemy z (od miejsca 8 w tablicy)
+
+    // Ustawiamy tablicę jako wartość charakterystyki
+    pCharacteristic->setValue(values, sizeof(values));
     pCharacteristic->notify();
 
-    Serial.print("Wysłano przez BLE: ");
-    Serial.println(valueStr);
+    Serial.printf("Wysłano przez BLE: %f, %f, %f\n", x, y, z);
 
     // Hero send value via BLE
     delay(1000);
