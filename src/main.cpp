@@ -13,11 +13,5 @@ void setup()
 
 void loop()
 {
-  /* Local variables */
-  int rc;
-  esp_err_t ret;
-
-  // put your main code here, to run repeatedly:
-  Serial.println("Hello, World!");
-  delay(1000);
+  loopBLE();
 }
