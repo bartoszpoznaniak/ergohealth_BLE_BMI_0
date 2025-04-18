@@ -14,8 +14,11 @@ void loop()
   float y = random(-100, 101) / 10.0;
   float z = random(-100, 101) / 10.0;
 
-  BLE::setValues(x, y, z);
-  Serial.printf("Wysłano przez BLE::: %f, %f, %f\n", x, y, z);
+  if (BLE::isConnected())
+  {
+    BLE::setValues(x, y, z);
+    Serial.printf("Wysłano przez BLE::: %f, %f, %f\n", x, y, z);
+  }
 
   delay(500);
 }

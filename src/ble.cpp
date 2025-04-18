@@ -14,11 +14,32 @@ namespace BLE
     float x = 0.0;
     float y = 0.0;
     float z = 0.0;
+    bool connected = false;
+
+    class MyServerCallbacks : public BLEServerCallbacks
+    {
+        void onConnect(BLEServer *pServer) override
+        {
+            Serial.println("🔗 BLE connected");
+            connected = true;
+        }
+
+        void onDisconnect(BLEServer *pServer) override
+        {
+            connected = false;
+
+            Serial.println("❌ BLE disconnected");
+            // Wznawiamy reklamowanie
+            BLEDevice::startAdvertising();
+            Serial.println("📢 Advertising restarted");
+        }
+    };
 
     void setupBLE()
     {
         BLEDevice::init(BLE_DEVICE_NAME);
         BLEServer *pServer = BLEDevice::createServer();
+        pServer->setCallbacks(new MyServerCallbacks());
 
         BLEService *pService = pServer->createService(SERVICE_UUID);
         pCharacteristic = pService->createCharacteristic(
@@ -61,5 +82,10 @@ namespace BLE
 
         pCharacteristic->setValue(values, sizeof(values));
         pCharacteristic->notify();
+    }
+
+    bool isConnected()
+    {
+        return connected;
     }
 }
