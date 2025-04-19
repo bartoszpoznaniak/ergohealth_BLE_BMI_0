@@ -17,7 +17,7 @@ void loop()
   if (BLE::isConnected())
   {
     BLE::setValues(x, y, z);
-    Serial.printf("Wysłano przez BLE::: %f, %f, %f\n", x, y, z);
+    // Serial.printf("Wysłano przez BLE::: %f, %f, %f\n", x, y, z);
   }
 
   delay(500);

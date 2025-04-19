@@ -15,6 +15,8 @@ namespace BLE
     float y = 0.0;
     float z = 0.0;
     bool connected = false;
+    float maxSensitivity = 10.0;
+    float sensitivity = 1.0;
 
     class MyServerCallbacks : public BLEServerCallbacks
     {
@@ -35,6 +37,49 @@ namespace BLE
         }
     };
 
+    class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
+    {
+        void onWrite(BLECharacteristic *pChar) override
+        {
+            std::string rxValue = pChar->getValue();
+
+            if (rxValue.length() != 5)
+            {
+                Serial.println("Invalid data length");
+                return;
+            }
+
+            char prefix = rxValue[0];
+            float value;
+            memcpy(&value, rxValue.data() + 1, sizeof(float));
+
+            Serial.print("Received: ");
+            Serial.print(prefix);
+            Serial.print(" -> ");
+            Serial.println(value);
+
+            // Reakcja na różne prefixy
+            switch (prefix)
+            {
+            case 'S':
+                Serial.print("🔧 Sensitivity set to: ");
+                Serial.println(value);
+                sensitivity = value;
+                break;
+
+            case 'X':
+                Serial.print("🧭 X set to: ");
+                Serial.println(value);
+                break;
+
+            // Dodaj inne przypadki jak Y, Z, T, L itd.
+            default:
+                Serial.println("❓ Unknown prefix");
+                break;
+            }
+        }
+    };
+
     void setupBLE()
     {
         BLEDevice::init(BLE_DEVICE_NAME);
@@ -49,6 +94,7 @@ namespace BLE
                 BLECharacteristic::PROPERTY_NOTIFY);
 
         pCharacteristic->setValue("Hello World says Neil");
+        pCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
         pService->start();
 
         // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
@@ -75,10 +121,15 @@ namespace BLE
 
     void notifyBLE()
     {
-        uint8_t values[12];                // 3 * 4 = 12 bajtów
-        memcpy(values, &x, sizeof(x));     // Kopiujemy x
-        memcpy(values + 4, &y, sizeof(y)); // Kopiujemy y (od miejsca 4 w tablicy)
-        memcpy(values + 8, &z, sizeof(z)); // Kopiujemy z (od miejsca 8 w tablicy)
+        float sensitivityRatio = sensitivity / maxSensitivity;
+        float normalizedX = x * sensitivityRatio;
+        float normalizedY = y * sensitivityRatio;
+        float normalizedZ = z * sensitivityRatio;
+
+        uint8_t values[12];
+        memcpy(values, &normalizedX, sizeof(normalizedX));
+        memcpy(values + 4, &normalizedY, sizeof(normalizedY));
+        memcpy(values + 8, &normalizedZ, sizeof(normalizedZ));
 
         pCharacteristic->setValue(values, sizeof(values));
         pCharacteristic->notify();

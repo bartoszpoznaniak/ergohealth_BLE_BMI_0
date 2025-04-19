@@ -5,10 +5,12 @@
 
 namespace BLE
 {
-    extern float x;        // Zmienna globalna dla x
-    extern float y;        // Zmienna globalna dla y
-    extern float z;        // Zmienna globalna dla z
-    extern bool connected; // Zmienna globalna dla z
+    extern float x;
+    extern float y;
+    extern float z;
+    extern bool connected;
+    extern float maxSensitivity;
+    extern float sensitivity;
 
     void setupBLE();
     void notifyBLE();
