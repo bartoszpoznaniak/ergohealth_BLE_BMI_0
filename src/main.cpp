@@ -81,3 +81,18 @@ void loop()
   {
     Serial.println("❌ Błąd odczytu danych z BMI270");
   }
+
+  delay(100); // Zmieniamy opóźnienie na 100ms jak w Arduino
+}
+
+void handleReset()
+{
+  offsetX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI;
+  offsetY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI;
+
+  // Aktualizuj zmienne globalne na 0
+  rawAccX = 0;
+  rawAccY = 0;
+
+  printf("Sensor wyzerowany");
+}
