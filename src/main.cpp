@@ -9,51 +9,75 @@ float offsetX = 0;
 float offsetY = 0;
 uint8_t i2cAddress = BMI2_I2C_PRIM_ADDR; // 0x68
 bool deviceConnected = false;
+
 void setup()
 {
   Serial.begin(115200);
+  delay(1000); // Dajmy czas na inicjalizację Serial
 
+  Serial.println("🔵 Inicjalizacja I2C...");
   Wire.begin();
+  Wire.setClock(400000); // Ustawmy wyższą częstotliwość I2C
+  Serial.println("✅ I2C zainicjalizowane");
 
-  // I nicjalizacja BMI270
-  // bool success = myIMU.beginI2C(i2cAddress);
-  // Serial.printf("i2cAddress:%d\n", i2cAddress);
-  // if (!success)
-  // {
-  //   Serial.println("Error: BMI270 not connected, check wiring and I2C address!");
-  //   while (1)
-  //   ;
-  // }
+  // Inicjalizacja BMI270
+  Serial.println("🔵 Inicjalizacja BMI270...");
+  Serial.printf("Adres I2C: 0x%X\n", i2cAddress);
 
-  // Serial.println("BMI270 connected!"); //
+  // Sprawdźmy, czy urządzenie odpowiada na adresie I2C
+  Wire.beginTransmission(i2cAddress);
+  byte error = Wire.endTransmission();
+  if (error == 0)
+  {
+    Serial.println("✅ Urządzenie odpowiada na adresie I2C");
+  }
+  else
+  {
+    Serial.printf("❌ Błąd I2C: %d\n", error);
+  }
+
+  while (myIMU.beginI2C(i2cAddress) != BMI2_OK)
+  {
+    Serial.println("❌ Błąd: BMI270 nie połączony, sprawdź połączenia i adres I2C!");
+    delay(1000);
+  }
+  Serial.println("✅ BMI270 połączony!");
 
   BLE::setupBLE();
   Serial.printf("Jestem po setupBLE \n ");
-
 }
 
 void loop()
 {
-
- // rawAccX = myIMU.data.accelX;
- // rawAccY = myIMU.data.accelY;
-
-  // Wyświetlamy przez Serial z maksymalną precyzją
-  // Serial.printf("Serial: %f %f\n", rawAccX, rawAccY);
-
-  float x = random(-100, 101) / 10.0; // random() zwraca liczbę całkowitą, dzielimy przez 10 aby uzyskać wartości zmiennoprzecinkowe w zakresie -10 do 10
-  float y = random(-100, 101) / 10.0;
-  float z = random(-100, 101) / 10.0;
-
-  // x = myIMU.data.accelX;
-  // y = myIMU.data.accelY;
-  // z = 0;
-
-  if (BLE::isConnected())
+  // Odczyt danych z BMI270
+  if (myIMU.getSensorData() == BMI2_OK)
   {
-    BLE::setValues(x, y, z);
-    Serial.printf("Wysłano przez BLE::: %f, %f, %f\n", x, y, z);
+    rawAccX = myIMU.data.accelX;
+    rawAccY = myIMU.data.accelY;
+    rawAccZ = myIMU.data.accelZ;
+
+    // Obliczanie kątów zgodnie z kodem Arduino
+    float angleX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI - offsetX;
+    float angleY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI - offsetY;
+
+    Serial.printf("📊 Odczyt z BMI270: X=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
+    Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
+
+    float x = angleX;
+    float y = angleY;
+    float z = 0; // Nie używamy Z
+
+    if (BLE::isConnected())
+    {
+      BLE::setValues(x, y, z);
+      Serial.printf("📤 Wysłano przez BLE: X=%.6f, Y=%.6f, Z=%.6f\n", x, y, z);
+    }
+    else
+    {
+      Serial.println("⚠️ Brak połączenia BLE");
+    }
   }
-  //Serial.printf("Juhu0 \n ");
-  delay(500);
-}
+  else
+  {
+    Serial.println("❌ Błąd odczytu danych z BMI270");
+  }
