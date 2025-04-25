@@ -20,6 +20,8 @@ namespace BLE
     float maxSensitivity = 10.0;
     float sensitivity = 1.0;
     std::function<void()> resetCallback = nullptr;
+    std::function<void(unsigned long)> _setBadPostureTimeCallback = nullptr;
+    std::function<void(float)> _setPostureThresholdCallback = nullptr;
 
     class MyServerCallbacks : public BLEServerCallbacks
     {
@@ -74,6 +76,27 @@ namespace BLE
                 if (resetCallback)
                 {
                     resetCallback();
+                }
+                break;
+
+            case 'T':
+                if (_setBadPostureTimeCallback)
+                {
+                    Serial.print("⏱️ Bad posture time set to: ");
+                    Serial.print(value);
+                    Serial.println(" minutes");
+                    // Konwertujemy minuty na milisekundy
+                    _setBadPostureTimeCallback(value * 60000);
+                }
+                break;
+
+            case 'P': // P jak Posture threshold
+                if (_setPostureThresholdCallback)
+                {
+                    Serial.print("📏 Posture threshold set to: ");
+                    Serial.print(value);
+                    Serial.println(" degrees");
+                    _setPostureThresholdCallback(value);
                 }
                 break;
 
@@ -150,6 +173,16 @@ namespace BLE
     void setResetCallback(std::function<void()> callback)
     {
         resetCallback = callback;
+    }
+
+    void setBadPostureTimeCallback(std::function<void(unsigned long)> callback)
+    {
+        _setBadPostureTimeCallback = callback;
+    }
+
+    void setPostureThresholdCallback(std::function<void(float)> callback)
+    {
+        _setPostureThresholdCallback = callback;
     }
 
     bool isConnected()

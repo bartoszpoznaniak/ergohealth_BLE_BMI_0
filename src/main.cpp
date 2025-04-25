@@ -9,7 +9,21 @@ float offsetX = 0;
 float offsetY = 0;
 uint8_t i2cAddress = BMI2_I2C_PRIM_ADDR; // 0x68
 bool deviceConnected = false;
+
+// Czas złej postawy (domyślnie 10 minut w milisekundach)
+unsigned long badPostureTime = 60000; // 10 min * 60 sec * 1000 ms
+
+// Próg odchylenia uznawany za złą postawę (domyślnie 15 stopni)
+float postureThreshold = 15.0;
+
+// Zmienna do śledzenia czasu rozpoczęcia złej postawy
+unsigned long badPostureStartTime = 0;
+bool wasInBadPosture = false;
+
 void handleReset();
+void setBadPostureTime(unsigned long newTime);
+void setPostureThreshold(float newThreshold);
+
 void setup()
 {
   Serial.begin(115200);
@@ -48,6 +62,8 @@ void setup()
   Serial.printf("Jestem po setupBLE \n ");
 
   BLE::setResetCallback(handleReset);
+  BLE::setBadPostureTimeCallback(setBadPostureTime);
+  BLE::setPostureThresholdCallback(setPostureThreshold);
 }
 
 void loop()
@@ -69,6 +85,34 @@ void loop()
     float x = angleX;
     float y = angleY;
     float z = 0; // Nie używamy Z
+
+    // Obliczenie całkowitego odchylenia od pozycji zerowej
+    float posture = sqrt(x * x + y * y);
+
+    // Sprawdzenie czy przekroczono próg złej postawy
+    bool isBadPosture = posture > postureThreshold;
+
+    if (isBadPosture)
+    {
+      // Jeśli wcześniej nie byliśmy w złej postawie, zapisz czas rozpoczęcia
+      if (!wasInBadPosture)
+      {
+        badPostureStartTime = millis();
+        wasInBadPosture = true;
+        Serial.printf("⚠️ Wykryto złą postawę! Odchylenie: %.2f° (próg: %.2f°)\n", posture, postureThreshold);
+      }
+      // Sprawdź, czy właśnie przekroczono krytyczny czas
+      unsigned long currentBadPostureTime = millis() - badPostureStartTime;
+      if (currentBadPostureTime >= badPostureTime && currentBadPostureTime - 100 < badPostureTime)
+      { // 100ms margines na pewność
+        Serial.printf("🚨 UWAGA: Wada postawy w krytycznym czasie (%.1f minut)!\n", badPostureTime / 60000.0);
+      }
+    }
+    else
+    {
+      // Reset licznika jeśli postura jest prawidłowa
+      wasInBadPosture = false;
+    }
 
     if (BLE::isConnected())
     {
@@ -98,4 +142,16 @@ void handleReset()
   rawAccY = 0;
 
   printf("Sensor wyzerowany");
+}
+
+void setBadPostureTime(unsigned long newTime)
+{
+  badPostureTime = newTime;
+  Serial.printf("⏱️ Ustawiono czas złej postawy na: %lu ms\n", badPostureTime);
+}
+
+void setPostureThreshold(float newThreshold)
+{
+  postureThreshold = newThreshold;
+  Serial.printf("📏 Ustawiono próg postawy na: %.2f stopni\n", postureThreshold);
 }
