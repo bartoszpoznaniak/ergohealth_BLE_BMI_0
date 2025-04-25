@@ -9,7 +9,7 @@ float offsetX = 0;
 float offsetY = 0;
 uint8_t i2cAddress = BMI2_I2C_PRIM_ADDR; // 0x68
 bool deviceConnected = false;
-
+void handleReset();
 void setup()
 {
   Serial.begin(115200);
@@ -25,6 +25,7 @@ void setup()
   Serial.printf("Adres I2C: 0x%X\n", i2cAddress);
 
   // Sprawdźmy, czy urządzenie odpowiada na adresie I2C
+
   Wire.beginTransmission(i2cAddress);
   byte error = Wire.endTransmission();
   if (error == 0)
@@ -45,6 +46,8 @@ void setup()
 
   BLE::setupBLE();
   Serial.printf("Jestem po setupBLE \n ");
+
+  BLE::setResetCallback(handleReset);
 }
 
 void loop()
@@ -60,8 +63,8 @@ void loop()
     float angleX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI - offsetX;
     float angleY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI - offsetY;
 
-    Serial.printf("📊 Odczyt z BMI270: X=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
-    Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
+    // Serial.printf("📊 Odczyt z BMI270: X=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
+    // Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
 
     float x = angleX;
     float y = angleY;

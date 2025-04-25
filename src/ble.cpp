@@ -5,9 +5,11 @@
 #include "ble.h"
 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHARACTERISTIC_UUID_MAIN "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHARACTERISTIC_UUID_BG "c0647d3b-e868-4281-9fe0-b02cd48af2e8"
 
-BLECharacteristic *pCharacteristic;
+BLECharacteristic *pCharacteristicBG;
+BLECharacteristic *pCharacteristicMain;
 
 namespace BLE
 {
@@ -17,6 +19,7 @@ namespace BLE
     bool connected = false;
     float maxSensitivity = 10.0;
     float sensitivity = 1.0;
+    std::function<void()> resetCallback = nullptr;
 
     class MyServerCallbacks : public BLEServerCallbacks
     {
@@ -67,12 +70,13 @@ namespace BLE
                 sensitivity = value;
                 break;
 
-            case 'X':
-                Serial.print("🧭 X set to: ");
-                Serial.println(value);
+            case 'R':
+                if (resetCallback)
+                {
+                    resetCallback();
+                }
                 break;
 
-            // Dodaj inne przypadki jak Y, Z, T, L itd.
             default:
                 Serial.println("❓ Unknown prefix");
                 break;
@@ -82,45 +86,40 @@ namespace BLE
 
     void setupBLE()
     {
-        Serial.println("🔵 Inicjalizacja BLE...");
         BLEDevice::init(BLE_DEVICE_NAME);
-        Serial.println("✅ BLEDevice::init zakończone");
-
         BLEServer *pServer = BLEDevice::createServer();
-        Serial.println("✅ Utworzono serwer BLE");
-
         pServer->setCallbacks(new MyServerCallbacks());
-        Serial.println("✅ Ustawiono callbacki serwera");
 
         BLEService *pService = pServer->createService(SERVICE_UUID);
-        Serial.println("✅ Utworzono usługę BLE");
 
-        pCharacteristic = pService->createCharacteristic(
-            CHARACTERISTIC_UUID,
+        // Main characteristic
+        pCharacteristicMain = pService->createCharacteristic(
+            CHARACTERISTIC_UUID_MAIN,
             BLECharacteristic::PROPERTY_READ |
                 BLECharacteristic::PROPERTY_WRITE |
                 BLECharacteristic::PROPERTY_NOTIFY);
-        Serial.println("✅ Utworzono charakterystykę BLE");
 
-        pCharacteristic->setValue("Hello World says Neil");
-        pCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
-        Serial.println("✅ Ustawiono wartości i callbacki charakterystyki");
+        pCharacteristicMain->setCallbacks(new MyCharacteristicCallbacks());
+
+        // Background characteristic
+        pCharacteristicBG = pService->createCharacteristic(
+            CHARACTERISTIC_UUID_BG,
+            BLECharacteristic::PROPERTY_READ |
+                BLECharacteristic::PROPERTY_NOTIFY);
 
         pService->start();
-        Serial.println("✅ Uruchomiono usługę BLE");
 
+        // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
         BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
         pAdvertising->addServiceUUID(SERVICE_UUID);
-        Serial.println("✅ Dodano UUID usługi do reklamowania");
 
         pAdvertising->setScanResponse(true);
-        pAdvertising->setMinPreferred(0x06);
+        pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
         pAdvertising->setMinPreferred(0x12);
-        Serial.println("✅ Skonfigurowano parametry reklamowania");
 
         BLEDevice::startAdvertising();
-        Serial.println("✅ Rozpoczęto reklamowanie BLE");
-        Serial.println("📱 Urządzenie jest gotowe do połączenia!");
+
+        Serial.println("Characteristic defined! Now you can read it in your phone!");
     }
 
     void setValues(float newX, float newY, float newZ)
@@ -134,31 +133,33 @@ namespace BLE
 
     void notifyBLE()
     {
-        if (!connected)
-        {
-            Serial.println("⚠️ Próba wysłania danych bez połączenia BLE");
-            return;
-        }
-
         float sensitivityRatio = sensitivity / maxSensitivity;
         float normalizedX = x * sensitivityRatio;
         float normalizedY = y * sensitivityRatio;
         float normalizedZ = z * sensitivityRatio;
-
-        Serial.printf("📤 Wysyłanie danych: X=%.2f, Y=%.2f, Z=%.2f\n", normalizedX, normalizedY, normalizedZ);
 
         uint8_t values[12];
         memcpy(values, &normalizedX, sizeof(normalizedX));
         memcpy(values + 4, &normalizedY, sizeof(normalizedY));
         memcpy(values + 8, &normalizedZ, sizeof(normalizedZ));
 
-        pCharacteristic->setValue(values, sizeof(values));
-        pCharacteristic->notify();
-        Serial.println("✅ Dane wysłane przez BLE");
+        pCharacteristicMain->setValue(values, sizeof(values));
+        pCharacteristicMain->notify();
+    }
+
+    void setResetCallback(std::function<void()> callback)
+    {
+        resetCallback = callback;
     }
 
     bool isConnected()
     {
         return connected;
+    }
+
+    void sendNotification(String text)
+    {
+        pCharacteristicBG->setValue(text.c_str());
+        pCharacteristicBG->notify();
     }
 }
