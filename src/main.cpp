@@ -86,10 +86,11 @@ void loop()
 
     // Sprawdzenie czy przekroczono próg złej postawy
     bool isBadPosture = posture > postureThreshold;
-    if (isBadPosture)
-    {
-      Serial.printf("🔴");
-    }
+    // if (isBadPosture)
+    // {
+    //   Serial.printf("🔴");
+    //   Serial.printf("🔴");
+    // }
     if (isBadPosture and BLE::getNotificationDelay() > 0)
     {
       unsigned long currentTime = millis();
