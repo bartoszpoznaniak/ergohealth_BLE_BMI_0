@@ -19,9 +19,11 @@ namespace BLE
     bool connected = false;
     float maxSensitivity = 10.0;
     float sensitivity = 1.0;
+    float notificationDelay = 60.0;
+    float redRadius = 0.9;
+    float yellowRadius = 0.5;
+    float greenRadius = 0.3;
     std::function<void()> resetCallback = nullptr;
-    std::function<void(unsigned long)> _setBadPostureTimeCallback = nullptr;
-    std::function<void(float)> _setPostureThresholdCallback = nullptr;
 
     class MyServerCallbacks : public BLEServerCallbacks
     {
@@ -58,11 +60,6 @@ namespace BLE
             float value;
             memcpy(&value, rxValue.data() + 1, sizeof(float));
 
-            Serial.print("Received: ");
-            Serial.print(prefix);
-            Serial.print(" -> ");
-            Serial.println(value);
-
             // Reakcja na różne prefixy
             switch (prefix)
             {
@@ -79,28 +76,36 @@ namespace BLE
                 }
                 break;
 
-            case 'T':
-                if (_setBadPostureTimeCallback)
-                {
-                    Serial.print("⏱️ Bad posture time set to: ");
-                    Serial.print(value);
-                    Serial.println(" minutes");
-                    // Konwertujemy minuty na milisekundy
-                    _setBadPostureTimeCallback(value * 60000);
-                }
+            case 'N':
+                Serial.print("🔔 Notification delay set to: ");
+                Serial.println(value);
+                notificationDelay = value;
                 break;
 
-            case 'P': // P jak Posture threshold
-                if (_setPostureThresholdCallback)
-                {
-                    Serial.print("📏 Posture threshold set to: ");
-                    Serial.print(value);
-                    Serial.println(" degrees");
-                    _setPostureThresholdCallback(value);
-                }
+            case 'r':
+                Serial.print("🔴 Red radius set to: ");
+                Serial.println(value);
+                redRadius = value;
+                break;
+
+            case 'y':
+                Serial.print("🟡 Yellow radius set to: ");
+                Serial.println(value);
+                yellowRadius = value;
+                break;
+
+            case 'g':
+                Serial.print("🟢 Green radius set to: ");
+                Serial.println(value);
+                greenRadius = value;
                 break;
 
             default:
+                Serial.print("Received: ");
+                Serial.print(prefix);
+                Serial.print(" -> ");
+                Serial.println(value);
+
                 Serial.println("❓ Unknown prefix");
                 break;
             }
@@ -175,16 +180,6 @@ namespace BLE
         resetCallback = callback;
     }
 
-    void setBadPostureTimeCallback(std::function<void(unsigned long)> callback)
-    {
-        _setBadPostureTimeCallback = callback;
-    }
-
-    void setPostureThresholdCallback(std::function<void(float)> callback)
-    {
-        _setPostureThresholdCallback = callback;
-    }
-
     bool isConnected()
     {
         return connected;
@@ -195,4 +190,14 @@ namespace BLE
         pCharacteristicBG->setValue(text.c_str());
         pCharacteristicBG->notify();
     }
+
+    float getSensitivity() { return sensitivity; }
+
+    float getNotificationDelay() { return notificationDelay; }
+
+    float getRedRadius() { return redRadius; }
+
+    float getYellowRadius() { return yellowRadius; }
+
+    float getGreenRadius() { return greenRadius; }
 }

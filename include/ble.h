@@ -1,4 +1,5 @@
 #ifndef BLE_H
+
 #define BLE_H
 
 #include <functional>
@@ -12,19 +13,27 @@ namespace BLE
     extern float z;
     extern bool connected;
     extern float maxSensitivity;
+
     extern float sensitivity;
+    extern float notificationDelay;
+    extern float redRadius;
+    extern float yellowRadius;
+    extern float greenRadius;
+
     extern std::function<void()> resetCallback;
-    extern std::function<void(unsigned long)> _setBadPostureTimeCallback;
-    extern std::function<void(float)> _setPostureThresholdCallback;
 
     void setupBLE();
     void notifyBLE();
     void setValues(float newX, float newY, float newZ);
     void setResetCallback(std::function<void()> callback);
     bool isConnected();
-    void setBadPostureTimeCallback(std::function<void(unsigned long)> callback);
-    void setPostureThresholdCallback(std::function<void(float)> callback);
     void sendNotification(String text);
+
+    float getSensitivity();
+    float getNotificationDelay();
+    float getRedRadius();
+    float getYellowRadius();
+    float getGreenRadius();
 }
 
 #endif // BLE_H

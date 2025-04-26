@@ -10,9 +10,6 @@ float offsetY = 0;
 uint8_t i2cAddress = BMI2_I2C_PRIM_ADDR; // 0x68
 bool deviceConnected = false;
 
-// Czas złej postawy (domyślnie 10 minut w milisekundach)
-unsigned long badPostureTime = 60000; // 10 min * 60 sec * 1000 ms
-
 // Próg odchylenia uznawany za złą postawę (domyślnie 15 stopni)
 float postureThreshold = 15.0;
 
@@ -62,8 +59,6 @@ void setup()
   Serial.printf("Jestem po setupBLE \n ");
 
   BLE::setResetCallback(handleReset);
-  BLE::setBadPostureTimeCallback(setBadPostureTime);
-  BLE::setPostureThresholdCallback(setPostureThreshold);
 }
 
 void loop()
@@ -91,21 +86,30 @@ void loop()
 
     // Sprawdzenie czy przekroczono próg złej postawy
     bool isBadPosture = posture > postureThreshold;
-
     if (isBadPosture)
     {
+      Serial.printf("🔴");
+    }
+    if (isBadPosture and BLE::getNotificationDelay() > 0)
+    {
+      unsigned long currentTime = millis();
       // Jeśli wcześniej nie byliśmy w złej postawie, zapisz czas rozpoczęcia
       if (!wasInBadPosture)
       {
-        badPostureStartTime = millis();
+        badPostureStartTime = currentTime;
         wasInBadPosture = true;
         Serial.printf("⚠️ Wykryto złą postawę! Odchylenie: %.2f° (próg: %.2f°)\n", posture, postureThreshold);
       }
       // Sprawdź, czy właśnie przekroczono krytyczny czas
-      unsigned long currentBadPostureTime = millis() - badPostureStartTime;
-      if (currentBadPostureTime >= badPostureTime && currentBadPostureTime - 100 < badPostureTime)
+      unsigned long badPostureInterval = BLE::getNotificationDelay() * 1000;
+
+      unsigned long badPostureDelay = currentTime - badPostureStartTime;
+      //      Serial.printf("🔴 %.0f / %.0f \n", badPostureDelay / 1000.0, badPostureInterval / 1000.0);
+      if (badPostureDelay >= badPostureInterval)
       { // 100ms margines na pewność
-        Serial.printf("🚨 UWAGA: Wada postawy w krytycznym czasie (%.1f minut)!\n", badPostureTime / 60000.0);
+        badPostureStartTime = currentTime;
+        Serial.printf("🚨 UWAGA: Wada postawy w krytycznym czasie (%.1f minut)!\n", badPostureInterval / 1000.0);
+        BLE::sendNotification("B");
       }
     }
     else
@@ -117,11 +121,11 @@ void loop()
     if (BLE::isConnected())
     {
       BLE::setValues(x, y, z);
-      Serial.printf("📤 Wysłano przez BLE: X=%.6f, Y=%.6f, Z=%.6f\n", x, y, z);
+      // Serial.printf("📤 Wysłano przez BLE: X=%.6f, Y=%.6f, Z=%.6f\n", x, y, z);
     }
     else
     {
-      Serial.println("⚠️ Brak połączenia BLE");
+      // Serial.println("⚠️ Brak połączenia BLE");
     }
   }
   else
@@ -129,7 +133,7 @@ void loop()
     Serial.println("❌ Błąd odczytu danych z BMI270");
   }
 
-  delay(100); // Zmieniamy opóźnienie na 100ms jak w Arduino
+  delay(500); // Zmieniamy opóźnienie na 100ms jak w Arduino
 }
 
 void handleReset()
@@ -142,12 +146,6 @@ void handleReset()
   rawAccY = 0;
 
   printf("Sensor wyzerowany");
-}
-
-void setBadPostureTime(unsigned long newTime)
-{
-  badPostureTime = newTime;
-  Serial.printf("⏱️ Ustawiono czas złej postawy na: %lu ms\n", badPostureTime);
 }
 
 void setPostureThreshold(float newThreshold)
