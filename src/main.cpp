@@ -88,8 +88,8 @@ void loop()
   // Serial.printf("Posture: %.0f / %.0f \n", posture, RED_POSTURE_THRESHOLD);
 
   // Sprawdzenie czy przekroczono próg złej postawy
-  bool isRedPosture = posture * BLE::getYellowRadius() > YELLOW_POSTURE_THRESHOLD;
-  bool isYellowPosture = posture * BLE::getGreenRadius() > GREEN_POSTURE_THRESHOLD;
+  bool isRedPosture = posture > 90.0f * BLE::getYellowRadius();
+  bool isYellowPosture = posture > 90.0f * BLE::getGreenRadius();
   Serial.printf("isPosture: %d %d\n", (int)isRedPosture, (int)isYellowPosture);
 
   if (isRedPosture)
@@ -106,8 +106,7 @@ void loop()
                     YELLOW_POSTURE_THRESHOLD);
     }
     // Sprawdź, czy właśnie przekroczono krytyczny czas
-    // unsigned long badPostureInterval = BLE::getNotificationDelay() * 1000;
-    unsigned long badPostureInterval = 15 * 1000;
+    unsigned long badPostureInterval = BLE::getNotificationDelay() * 1000;
 
     unsigned long badPostureDelay = currentTime - badPostureStartTime;
     Serial.printf("🔴 %.0f / %.0f \n", badPostureDelay / 1000.0, badPostureInterval / 1000.0);
