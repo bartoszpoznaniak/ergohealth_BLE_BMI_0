@@ -83,20 +83,20 @@ namespace BLE
                 break;
 
             case 'r':
-                Serial.print("🔴 Red radius set to: ");
-                Serial.println(value);
+                // Serial.print("🔴 Red radius set to: ");
+                // Serial.println(value);
                 redRadius = value;
                 break;
 
             case 'y':
-                Serial.print("🟡 Yellow radius set to: ");
-                Serial.println(value);
+                // Serial.print("🟡 Yellow radius set to: ");
+                // Serial.println(value);
                 yellowRadius = value;
                 break;
 
             case 'g':
-                Serial.print("🟢 Green radius set to: ");
-                Serial.println(value);
+                // Serial.print("🟢 Green radius set to: ");
+                // Serial.println(value);
                 greenRadius = value;
                 break;
 
