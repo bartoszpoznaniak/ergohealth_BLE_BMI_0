@@ -6,6 +6,7 @@
 // Próg odchylenia uznawany za złą postawę (domyślnie 15 stopni)
 #define YELLOW_POSTURE_THRESHOLD 15.0
 #define GREEN_POSTURE_THRESHOLD 5.0
+#define PING_INTERVAL 10
 
 BMI270 myIMU;
 float rawAccX, rawAccY, rawAccZ;
@@ -17,6 +18,7 @@ bool deviceConnected = false;
 
 // Zmienna do śledzenia czasu rozpoczęcia złej postawy
 unsigned long badPostureStartTime = 0;
+unsigned long pingPostureStartTime = 0;
 bool wasInBadPosture = false;
 
 void handleReset();
@@ -90,7 +92,7 @@ void loop()
   // Sprawdzenie czy przekroczono próg złej postawy
   bool isRedPosture = posture > 90.0f * BLE::getYellowRadius();
   bool isYellowPosture = posture > 90.0f * BLE::getGreenRadius();
-  Serial.printf("isPosture: %d %d\n", (int)isRedPosture, (int)isYellowPosture);
+  // Serial.printf("isPosture: %d %d\n", (int)isRedPosture, (int)isYellowPosture);
 
   if (isRedPosture)
   {
@@ -125,6 +127,15 @@ void loop()
     // Serial.printf("ELSE0 Poprawna postawa\n");
     // Reset licznika jeśli postura jest prawidłowa
     wasInBadPosture = false;
+  }
+
+  // Send PING
+  unsigned long pingPostureDelay = millis() - pingPostureStartTime;
+  if (pingPostureDelay >= PING_INTERVAL * 1000)
+  {
+    pingPostureStartTime = millis();
+    Serial.printf("PING\n");
+    BLE::sendNotification("p");
   }
 
   // Wysyłanie danych (animacja)
