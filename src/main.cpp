@@ -64,29 +64,9 @@ void setup()
   BLE::setResetCallback(handleReset);
 }
 
-int counter = 0;
-int sendCounter = 0;
 void loop()
 {
-  // counter++;
-  // Serial.printf("BLE Connected: %d\n", (int)BLE::isConnected());
-  // Serial.printf("Counter: %d/%d \n", counter, 30);
-  // Serial.printf("Send Counter: %d \n", sendCounter);
-
-  // if (BLE::isConnected())
-  // {
-  //   if (counter >= 30)
-  //   {
-  //     counter = 0;
-  //     Serial.printf("Send \"B\"! \n");
-  //     sendCounter++;
-  //     BLE::sendNotification("B");
-  //   }
-  // }
-
-  // BLE::setValues(10, 15, 0);
-
-  // delay(1000);
+  //__testing();
   // return;
 
   if (myIMU.getSensorData() != BMI2_OK)
@@ -105,8 +85,10 @@ void loop()
   float angleX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI - offsetX;
   float angleY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI - offsetY;
 
-  angleX *= BLE::getSensitivity();
-  angleY *= BLE::getSensitivity();
+  // angleX *= BLE::getSensitivity();
+  // angleY *= BLE::getSensitivity();
+  float sAngleX = angleX * BLE::getSensitivity();
+  float sAngleY = angleY * BLE::getSensitivity();
 
   // Serial.printf("📊 Odczyt z BMI270: angleX=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
   // Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
@@ -114,7 +96,7 @@ void loop()
   float sensitivity = BLE::getSensitivity();
 
   // Obliczenie całkowitego odchylenia od pozycji zerowej
-  float posture = sqrt(angleX * angleX + angleY * angleY);
+  float posture = sqrt(sAngleX * sAngleX + sAngleY * sAngleY);
   // Serial.printf("Posture: %.0f / %.0f \n", posture, RED_POSTURE_THRESHOLD);
 
   Serial.printf("BLE Connected: %d\n", (int)BLE::isConnected());
@@ -192,4 +174,30 @@ void handleReset()
   rawAccY = 0;
 
   printf("Sensor wyzerowany");
+}
+
+void __testing()
+{
+  static int counter = 0;
+  static int sendCounter = 0;
+
+  counter++;
+  Serial.printf("BLE Connected: %d\n", (int)BLE::isConnected());
+  Serial.printf("Counter: %d/%d \n", counter, 30);
+  Serial.printf("Send Counter: %d \n", sendCounter);
+
+  if (BLE::isConnected())
+  {
+    if (counter >= 30)
+    {
+      counter = 0;
+      Serial.printf("Send \"B\"! \n");
+      sendCounter++;
+      BLE::sendNotification("B");
+    }
+  }
+
+  BLE::setValues(10, 15, 0);
+
+  delay(1000);
 }
