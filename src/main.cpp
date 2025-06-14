@@ -105,8 +105,8 @@ void loop()
   float angleX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI - offsetX;
   float angleY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI - offsetY;
 
-  // angleX *= BLE::getSensitivity();
-  // angleY *= BLE::getSensitivity();
+  angleX *= BLE::getSensitivity();
+  angleY *= BLE::getSensitivity();
 
   // Serial.printf("📊 Odczyt z BMI270: angleX=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
   // Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
