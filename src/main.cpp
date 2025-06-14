@@ -64,8 +64,31 @@ void setup()
   BLE::setResetCallback(handleReset);
 }
 
+int counter = 0;
+int sendCounter = 0;
 void loop()
 {
+  // counter++;
+  // Serial.printf("BLE Connected: %d\n", (int)BLE::isConnected());
+  // Serial.printf("Counter: %d/%d \n", counter, 30);
+  // Serial.printf("Send Counter: %d \n", sendCounter);
+
+  // if (BLE::isConnected())
+  // {
+  //   if (counter >= 30)
+  //   {
+  //     counter = 0;
+  //     Serial.printf("Send \"B\"! \n");
+  //     sendCounter++;
+  //     BLE::sendNotification("B");
+  //   }
+  // }
+
+  // BLE::setValues(10, 15, 0);
+
+  // delay(1000);
+  // return;
+
   if (myIMU.getSensorData() != BMI2_OK)
   {
     Serial.println("❌ Błąd odczytu danych z BMI270");
@@ -82,17 +105,24 @@ void loop()
   float angleX = atan2(rawAccX, sqrt(rawAccY * rawAccY + rawAccZ * rawAccZ)) * 180.0 / PI - offsetX;
   float angleY = -atan2(rawAccY, sqrt(rawAccX * rawAccX + rawAccZ * rawAccZ)) * 180.0 / PI - offsetY;
 
+  // angleX *= BLE::getSensitivity();
+  // angleY *= BLE::getSensitivity();
+
   // Serial.printf("📊 Odczyt z BMI270: angleX=%.2f, Y=%.2f, Z=%.2f\n", rawAccX, rawAccY, rawAccZ);
   // Serial.printf("📐 Kąty: X=%.6f, Y=%.6f\n", angleX, angleY);
+
+  float sensitivity = BLE::getSensitivity();
 
   // Obliczenie całkowitego odchylenia od pozycji zerowej
   float posture = sqrt(angleX * angleX + angleY * angleY);
   // Serial.printf("Posture: %.0f / %.0f \n", posture, RED_POSTURE_THRESHOLD);
 
+  Serial.printf("BLE Connected: %d\n", (int)BLE::isConnected());
+
   // Sprawdzenie czy przekroczono próg złej postawy
   bool isRedPosture = posture > 90.0f * BLE::getYellowRadius();
   bool isYellowPosture = posture > 90.0f * BLE::getGreenRadius();
-  // Serial.printf("isPosture: %d %d\n", (int)isRedPosture, (int)isYellowPosture);
+  Serial.printf("isPosture: %d %d\n", (int)isRedPosture, (int)isYellowPosture);
 
   if (isRedPosture)
   {
@@ -149,7 +179,7 @@ void loop()
     // Serial.println("⚠️ Brak połączenia BLE");
   }
 
-  delay(500);
+  delay(200);
 }
 
 void handleReset()

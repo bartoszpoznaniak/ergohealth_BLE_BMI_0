@@ -161,15 +161,15 @@ namespace BLE
 
     void notifyBLE()
     {
-        float sensitivityRatio = sensitivity / maxSensitivity;
-        float normalizedX = x * sensitivityRatio;
-        float normalizedY = y * sensitivityRatio;
-        float normalizedZ = z * sensitivityRatio;
+        // float sensitivityRatio = sensitivity / maxSensitivity;
+        // float normalizedX = x * sensitivityRatio;
+        // float normalizedY = y * sensitivityRatio;
+        // float normalizedZ = z * sensitivityRatio;
 
         uint8_t values[12];
-        memcpy(values, &normalizedX, sizeof(normalizedX));
-        memcpy(values + 4, &normalizedY, sizeof(normalizedY));
-        memcpy(values + 8, &normalizedZ, sizeof(normalizedZ));
+        memcpy(values, &x, sizeof(x));
+        memcpy(values + 4, &y, sizeof(y));
+        memcpy(values + 8, &z, sizeof(z));
 
         pCharacteristicMain->setValue(values, sizeof(values));
         pCharacteristicMain->notify();
